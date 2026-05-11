@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>이실장 안심케어 OX 퀴즈</title>
     <style>
-        /* 오프라인 대비: 인터넷 연결 실패 시 시스템 폰트 사용 */
         @font-face {
             font-family: 'Pretendard';
             src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
             font-weight: 400; font-style: normal;
+            font-display: swap;
         }
         :root {
             --primary: #4285F4; 
@@ -20,78 +20,114 @@
             --text: #3C4043;
         }
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Pretendard', sans-serif;
             background-color: var(--bg); margin: 0;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden;
+            min-height: 100vh; overflow-x: hidden;
         }
         #app {
-            width: 1100px; height: 750px; 
-            background: white; padding: 60px;
-            border-radius: 32px; box-shadow: 0 12px 40px rgba(32, 33, 36, 0.1);
-            text-align: center; position: relative; z-index: 5;
+            width: 90%;
+            max-width: 1000px;
+            min-height: 600px;
+            background: white; padding: 40px;
+            border-radius: 32px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+            text-align: center; position: relative;
             display: flex; flex-direction: column; justify-content: center;
-            box-sizing: border-box;
-            visibility: visible !important; /* 무조건 보이게 설정 */
+            box-sizing: border-box; margin: 20px;
         }
+
+        /* 진행 상태 표시줄 */
+        .progress-container {
+            width: 100%; height: 8px; background: #E8EAED;
+            border-radius: 10px; position: absolute; top: 0; left: 0; overflow: hidden;
+        }
+        .progress-bar {
+            width: 0%; height: 100%; background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
         .nav-controls {
-            position: absolute; top: 25px; left: 30px; right: 30px;
-            display: flex; justify-content: space-between; z-index: 10;
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .nav-btn {
-            background: #fff; border: 1px solid #DADCE0; padding: 10px 24px;
-            border-radius: 100px; font-size: 1.1rem; color: #5F6368;
+            background: #fff; border: 1px solid #DADCE0; padding: 8px 16px;
+            border-radius: 100px; font-size: 0.9rem; color: #5F6368;
             cursor: pointer; transition: all 0.2s;
         }
-        h1 { font-size: 4.8rem; margin: 0; color: var(--text); letter-spacing: -2px; line-height: 1.2; }
-        .question-text { font-size: 3.8rem; font-weight: 800; line-height: 1.4; margin: 40px 0; min-height: 220px; word-break: keep-all; color: #202124; }
-        .btn-group { display: flex; gap: 40px; justify-content: center; }
-        .btn-ox {
-            width: 280px; height: 280px; font-size: 11rem; font-weight: 900;
-            border: none; border-radius: 40px; cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; align-items: center; justify-content: center; color: white;
+
+        h1 { font-size: clamp(2rem, 8vw, 4rem); margin: 0; color: var(--text); letter-spacing: -1px; }
+        .question-text { 
+            font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 800; 
+            line-height: 1.4; margin: 30px 0; min-height: 150px; 
+            word-break: keep-all; color: #202124; 
         }
-        .btn-o { background: var(--success); box-shadow: 0 10px 0 #288d44; }
-        .btn-x { background: var(--danger); box-shadow: 0 10px 0 #c53929; }
+
+        .btn-group { display: flex; gap: 20px; justify-content: center; width: 100%; }
+        .btn-ox {
+            flex: 1; max-width: 250px; aspect-ratio: 1 / 1;
+            font-size: clamp(4rem, 15vw, 8rem); font-weight: 900;
+            border: none; border-radius: 24px; cursor: pointer;
+            color: white; transition: transform 0.1s;
+        }
+        .btn-o { background: var(--success); box-shadow: 0 8px 0 #288d44; }
+        .btn-x { background: var(--danger); box-shadow: 0 8px 0 #c53929; }
+        .btn-ox:active { transform: translateY(4px); box-shadow: none; }
+
         #overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 100; justify-content: center; align-items: center; flex-direction: column;
+            padding: 20px; box-sizing: border-box;
         }
-        #result-mark { font-size: 10rem; font-weight: 900; color: white; margin-bottom: 15px; }
-        .explanation-card { background: white; color: var(--text); padding: 45px; border-radius: 28px; max-width: 800px; font-size: 2.3rem; line-height: 1.5; box-shadow: 0 24px 48px rgba(0,0,0,0.2); word-break: keep-all; }
-        .next-btn { margin-top: 40px; padding: 25px 80px; font-size: 2.2rem; font-weight: bold; border-radius: 100px; cursor: pointer; background: white; color: var(--text); border: none; }
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 150; }
-        .final-container { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: space-between; }
-        .score-visual { font-size: 1.4rem; color: var(--primary); font-weight: 800; background: var(--primary-light); padding: 6px 20px; border-radius: 50px; }
-        .rank-title { font-size: 3rem; font-weight: 900; color: var(--primary); margin: 5px 0 25px 0; }
-        .rank-quote { font-size: 1.65rem; font-weight: 700; color: #202124; margin-bottom: 15px; }
-        .rank-desc { font-size: 1.45rem; color: #5F6368; line-height: 1.6; max-width: 850px; word-break: keep-all; }
-        .bottom-section { display: flex; align-items: center; justify-content: center; gap: 50px; border-top: 1px solid #DADCE0; padding-top: 40px; margin-top: 20px; width: 100%; }
-        .qr-area { display: flex; align-items: center; gap: 20px; background: #fff; padding: 15px 25px; border-radius: 20px; border: 1px solid #DADCE0; }
-        .qr-text { text-align: left; }
-        .qr-label-main { font-size: 1.3rem; font-weight: 800; color: #000; margin-bottom: 5px; }
-        .qr-label-sub { font-size: 1.1rem; color: #000; font-weight: 500; }
-        .qr-img { width: 130px; height: 130px; object-fit: contain; }
-        .start-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
-        .start-brand { font-size: 2.6rem; color: var(--primary); font-weight: 800; letter-spacing: 0.1rem; margin-bottom: 80px; }
-        .start-title { margin-bottom: 100px; letter-spacing: -3px; }
+        #result-mark { font-size: clamp(3rem, 10vw, 6rem); font-weight: 900; color: white; margin-bottom: 20px; }
+        .explanation-card { 
+            background: white; padding: 30px; border-radius: 20px; 
+            max-width: 600px; width: 100%; font-size: clamp(1.1rem, 4vw, 1.8rem); 
+            line-height: 1.6; box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
+        }
+
+        .next-btn { 
+            margin-top: 30px; padding: 15px 60px; font-size: 1.5rem; 
+            font-weight: bold; border-radius: 100px; border: none; cursor: pointer;
+        }
+
+        /* 최종 결과 페이지 */
+        .rank-title { font-size: 2.2rem; font-weight: 900; color: var(--primary); margin: 10px 0; }
+        .rank-desc { font-size: 1.1rem; color: #5F6368; line-height: 1.5; padding: 0 10px; }
+        .bottom-section { 
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; 
+            border-top: 1px solid #DADCE0; padding-top: 30px; margin-top: 30px; width: 100%;
+        }
+        .qr-area { display: flex; align-items: center; gap: 15px; background: #fff; padding: 10px; border-radius: 15px; border: 1px solid #DADCE0; }
+        .qr-img { width: 80px; height: 80px; }
+
         .arcade-btn {
-            font-size: 2.2rem; padding: 25px 100px; background: var(--primary); color: white; border: none; border-radius: 100px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-            background-image: linear-gradient(to bottom, #77a9f7, #4285F4); box-shadow: 0 12px 0 #2854a8, 0 20px 30px rgba(66, 133, 244, 0.35); position: relative; top: 0;
+            font-size: 1.8rem; padding: 20px 60px; background: var(--primary); color: white; 
+            border: none; border-radius: 100px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 8px 0 #2854a8;
         }
-        .arcade-btn:active { top: 8px; box-shadow: 0 4px 0 #2854a8; }
-        b { color: #000; font-weight: 800; }
+
+        /* 모바일 대응 미디어 쿼리 */
+        @media (max-width: 600px) {
+            #app { padding: 30px 15px; border-radius: 20px; }
+            .btn-group { gap: 15px; }
+            .btn-ox { border-radius: 15px; }
+            .qr-area { width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
-<canvas id="confetti-canvas"></canvas>
+<canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:150;"></canvas>
+
 <div id="app">
-    <div class="nav-controls" id="nav-controls" style="display: none;">
-        <button class="nav-btn" onclick="prevQuestion()" id="prev-btn" style="visibility: hidden;">❮ 이전 질문</button>
-        <button class="nav-btn" onclick="renderStart()">처음으로 ⟲</button>
+    <div class="progress-container" id="progress-container" style="display: none;">
+        <div class="progress-bar" id="progress-bar"></div>
     </div>
-    <div id="content">로딩 중...</div>
+    <div class="nav-controls" id="nav-controls" style="display: none;">
+        <button class="nav-btn" onclick="prevQuestion()" id="prev-btn">❮ 이전</button>
+        <button class="nav-btn" onclick="renderStart()">처음으로</button>
+    </div>
+    <div id="content"></div>
 </div>
 
 <div id="overlay">
@@ -101,83 +137,26 @@
 </div>
 
 <script>
-    // 질문 데이터는 동일하므로 중복 방지를 위해 생략해도 로직은 작동합니다.
     const allQuestions = [
         { q: "등기부등본을 계약서 작성 당일에|확인하면 대항력 확보를 할 수있다.", a: "X", desc: "잔금 지급 직후와 전입신고 직후까지 변동 사항을 실시간으로 확인해야 안전합니다." },
         { q: "공동명의 주택 계약 시, 지분권자 과반의|동의가 없다면 계약이 무효될 수 있다.", a: "O", desc: "공유물 관리 행위는 지분의 과반수로 결정해야 하므로 전원의 동의나 위임장 확인이 필수입니다." },
-        { q: "대리인의 인감증명서는 발급일로부터|6개월 이내의 서류여야 안전하다.", a: "X", desc: "통상적으로 발급일로부터 3개월 이내의 최신 서류여야 안전합니다." },
-        { q: "확정일자는 해당 주택에|실거주를 시작한 이후에 부여받을 수 있다.", a: "X", desc: "임대차 계약서만 있다면 입주 전이라도 주민센터나 온라인을 통해 미리 받을 수 있습니다." },
-        { q: "등기부 '을구'가 깨끗하다면|내 보증금은 1순위다.", a: "X", desc: "을구가 깨끗해도 압류 전의 고액 체납이 있다면 보증금보다 우선 변제될 수 있습니다." },
         { q: "전입신고 당일 설정된 저당권은|세입자의 대항력보다 후순위이다.", a: "X", desc: "전입신고 효력은 익일 0시에 발생하므로, 당일 설정된 저당권이 법적으로 앞섭니다." },
-        { q: "다가구주택은 전체 세입자의 보증금 합계를 꼭 확인해야 한다.", a: "O", desc: "건물 전체가 경매에 넘어갈 경우 내 보증금의 배당 순위를 결정짓는 핵심 정보입니다." },
-        { q: "임차권등기명령은 보증금을 받지 못한 채|이사가야 할 때 대항력을 유지해주는 장치다.", a: "O", desc: "임차권등기가 완료되면 이사를 가도 기존의 순위와 대항력이 보존됩니다." },
-        { q: "'전입신고 불가' 특약은 임차인에게 무효인 조항이다.", a: "O", desc: "임차인에게 불리한 약정은 법적 효력이 없으며, 전입신고를 해야 법적 보호를 받을 수 있습니다." },
-        { q: "신분증 대조를 생략하고 등기부상 이름만|확인하는 것은 안전한 계약 방법이다.", a: "X", desc: "신분증 위조 가능성이 있으므로 이실장 안심케어 등으로 진위 확인이 필수입니다." },
-        { q: "법인 소유 주택은 개인 소유보다|권리관계가 단순하여 안전하다.", a: "X", desc: "법인은 파산 위험이나 내부 채무 관계가 복잡할 수 있어 주의가 필요합니다." },
-        { q: "이사 다음날 전입신고를 해도 권리 확보에는 지장이 없다.", a: "X", desc: "미루는 사이 대출이 실행되면 보증금 변제 순위가 뒤로 밀리게 됩니다." },
-        { q: "이사(점유)와 전입신고, 확정일자 중|하나라도 없으면 대항력이 완성되지 않는다.", a: "O", desc: "세 가지 요건을 모두 갖춰야만 법적인 대항력과 우선변제권이 생깁니다." },
-        { q: "등기부등본 '갑구'를 통해 해당 건물의|실제 소유주와 압류 여부를 확인할 수 있다.", a: "O", desc: "갑구는 소유권 및 소유권을 제한하는 압류, 가압류 등을 표시합니다." },
-        { q: "중개보조원이 계약 설명을|주도적으로 진행해도 법적으로 문제는 없다.", a: "X", desc: "중요 사항 설명은 반드시 공인중개사가 직접 해야 합니다." },
-        { q: "계약금은 반드시 임대인 명의의|계좌로 입금해 한다", a: "O", desc: "타인 계좌 입금은 추후 사고 발생 시 책임 소재가 불분명해집니다." },
-        { q: "건축물대장상 '위반건축물'인 주택도|전세자금대출 승인이 원활하게 이루어진다.", a: "X", desc: "위반건축물은 대출 및 보증보험 가입이 거절될 가능성이 매우 높습니다." },
-        { q: "거주 중 집주인이 바뀌더라도 임차인은|남은 계약 기간 동안 계속 거주할 수 있다.", a: "O", desc: "새 주인은 기존 임대인의 지위를 그대로 승계하므로 계약은 유지됩니다." },
-        { q: "거주 중 등기부에 '압류'가 설정된 경우|기다리다보면 사라진다.", a: "X", desc: "즉시 파악하고 대응책을 마련해야 합니다. 안심케어는 등기변동알림 서비스를 제공해드려요." },
-        { q: "주택의 일부를 점유하더라도 주소지를|다른 곳으로 옮기면 대항력이 상실된다.", a: "O", desc: "대항력을 유지하려면 주민등록(전입) 상태가 지속적으로 유지되어야 합니다." },
-        { q: "집주인의 세금 체납액은 내 보증금보다|먼저 변제될 위험이 있다.", a: "O", desc: "일부 당해세 등은 보증금보다 우선 변제될 수 있어 위험합니다." },
-        { q: "보일러 노후로 인한 교체 비용은|임차인이 부담하는 것이 원칙이다.", a: "X", desc: "주요 시설물의 노후 수리 및 교체 의무는 임대인에게 있습니다." },
-        { q: "묵시적 갱신 시 세입자는|언제든 해지를 통보할 수 있다", a: "O", desc: "통보 후 3개월이 지나면 해지 효력이 발생합니다." },
-        { q: "중개수수료 지불 시 현금영수증 발급을|요구하는 것은 정당한 권리다.", a: "O", desc: "부동산 중개업은 현금영수증 의무 발행 업종입니다." },
-        { q: "잔금 입금 직전, 등기부를 다시|확인하는 절차는 필수다.", a: "O", desc: "계약 당일 오전에도 변동 사항이 생길 수 있으니 꼭 확인하세요!" },
         { q: "이실장 안심케어는 전세 사기 피해 시|실손금을 보상해 줄까요?", a: "O", desc: "네! 권리관계 문제로 보증금을 잃게 될 경우 실손 보상을 지원합니다." },
-        { q: "이실장 안심케어는 법률 분쟁 시|전문 변호사 상담을 지원한다.", a: "O", desc: "이실장 안심케어는 전문가 법률 자문 서비스를 제공합니다." }
+        { q: "확정일자는 해당 주택에|실거주를 시작한 이후에 부여받을 수 있다.", a: "X", desc: "임대차 계약서만 있다면 입주 전이라도 주민센터나 온라인을 통해 미리 받을 수 있습니다." }
     ];
 
     let quizSet = [];
     let currentIdx = 0;
     let score = 0;
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playSfx(isCorrect) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(isCorrect ? 523 : 220, audioCtx.currentTime);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-    }
-
-    const canvas = document.getElementById('confetti-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    function createConfetti() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        for (let i = 0; i < 80; i++) {
-            particles.push({
-                x: canvas.width / 2, y: canvas.height / 2,
-                color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-                vX: (Math.random() - 0.5) * 25, vY: (Math.random() - 0.5) * 25,
-                radius: Math.random() * 6 + 2, alpha: 1
-            });
-        }
-        tick();
-    }
-    function tick() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach((p, i) => {
-            p.x += p.vX; p.y += p.vY; p.vY += 0.3; p.alpha -= 0.015;
-            ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
-            if (p.alpha <= 0) particles.splice(i, 1);
-        });
-        if (particles.length > 0) requestAnimationFrame(tick);
-    }
-
     function renderStart() {
+        document.getElementById('progress-container').style.display = 'none';
         document.getElementById('nav-controls').style.display = 'none';
         document.getElementById('content').innerHTML = `
             <div class="start-container">
-                <div class="start-brand">이실장 안심케어</div>
-                <h1 class="start-title">내 보증금은 내가 지킨다<br>🙆🏻🙅🏻‍♂️ 퀴즈</h1>
-                <button class="arcade-btn" onclick="startQuiz()">도전하기</button>
+                <div style="color:var(--primary); font-weight:800; margin-bottom:20px;">이실장 안심케어</div>
+                <h1 style="margin-bottom:40px;">내 보증금 지키는<br>안심 OX 퀴즈</h1>
+                <button class="arcade-btn" onclick="startQuiz()">시작하기</button>
             </div>
         `;
     }
@@ -185,17 +164,20 @@
     function startQuiz() {
         quizSet = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 3);
         currentIdx = 0; score = 0;
+        document.getElementById('progress-container').style.display = 'block';
         document.getElementById('nav-controls').style.display = 'flex';
         showQuestion();
     }
 
     function showQuestion() {
         const qData = quizSet[currentIdx];
-        const displayQ = qData.q.replace('|', '<br>');
+        const progress = ((currentIdx) / quizSet.length) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
         document.getElementById('prev-btn').style.visibility = currentIdx > 0 ? 'visible' : 'hidden';
+
         document.getElementById('content').innerHTML = `
-            <div style="font-size: 1.8rem; color: var(--primary); font-weight: bold; margin-bottom: 15px;">OX 퀴즈 문항 ${currentIdx + 1} / 3</div>
-            <div class="question-text">${displayQ}</div>
+            <div style="font-weight:bold; color:var(--primary); margin-bottom:10px;">Q ${currentIdx + 1} / ${quizSet.length}</div>
+            <div class="question-text">${qData.q.replace('|', '<br>')}</div>
             <div class="btn-group">
                 <button class="btn-ox btn-o" onclick="checkAnswer('O')">O</button>
                 <button class="btn-ox btn-x" onclick="checkAnswer('X')">X</button>
@@ -203,66 +185,56 @@
         `;
     }
 
-    function prevQuestion() { if (currentIdx > 0) { currentIdx--; showQuestion(); } }
-
     function checkAnswer(userAns) {
         const isCorrect = userAns === quizSet[currentIdx].a;
         const overlay = document.getElementById('overlay');
         const mark = document.getElementById('result-mark');
-        if (isCorrect) { score++; playSfx(true); createConfetti(); overlay.style.backgroundColor = "rgba(52, 168, 83, 0.96)"; mark.innerText = "🙆🏻 정답입니다!"; }
-        else { playSfx(false); overlay.style.backgroundColor = "rgba(234, 67, 53, 0.96)"; mark.innerText = "🙅🏻‍♂️ 아쉽습니다!"; }
-        document.getElementById('explanation').innerHTML = `<div style="color:black; font-size:1.4rem; margin-bottom:8px; font-weight:bold;">✅ 알아두면 좋은 정보</div>${quizSet[currentIdx].desc}`;
+        
+        if (isCorrect) { 
+            score++; 
+            overlay.style.backgroundColor = "rgba(52, 168, 83, 0.98)"; 
+            mark.innerText = "🙆🏻 정답입니다!"; 
+        } else { 
+            overlay.style.backgroundColor = "rgba(234, 67, 53, 0.98)"; 
+            mark.innerText = "🙅🏻‍♂️ 아쉽습니다!"; 
+        }
+        
+        document.getElementById('explanation').innerHTML = `<small>CHECK</small><br>${quizSet[currentIdx].desc}`;
         overlay.style.display = 'flex';
     }
 
     function closeOverlay() {
         document.getElementById('overlay').style.display = 'none';
         currentIdx++;
-        if (currentIdx < quizSet.length) showQuestion();
-        else showFinalResult();
+        if (currentIdx < quizSet.length) {
+            showQuestion();
+        } else {
+            document.getElementById('progress-bar').style.width = `100%`;
+            showFinalResult();
+        }
     }
+
+    function prevQuestion() { if (currentIdx > 0) { currentIdx--; showQuestion(); } }
 
     function showFinalResult() {
         document.getElementById('nav-controls').style.display = 'none';
-        let emoji, rank, quote, desc;
-        if (score === 3) {
-            emoji = "🐔"; rank = "안심 만렙 장닭"; quote = '"부동산 사기는 다 쪼아버린다!"';
-            desc = "완벽한 지식을 갖춘 당신, 이미 고수의 향기가 나요.<br>여기에 <b>이실장 안심케어</b>까지 더해지면 그야말로 철통보안 무적 상태!";
-        } else if (score === 2) {
-            emoji = "🐥"; rank = "똘똘한 병아리"; quote = '"이제 좀 삐약삐약 할 줄 아시네요!"';
-            desc = "기본은 알지만 2% 부족한 불안한 느낌은 어쩔 수 없죠.<br>그 빈 틈을 <b>이실장 안심케어</b>로 채워보세요.";
-        } else if (score === 1) {
-            emoji = "🐣"; rank = "갓 깨어난 달걀"; quote = '"등기부등본이 뭔지 이제 막 눈을 떴어요!"';
-            desc = "부동산 용어들, 너무 어렵죠?<br>혼자 고민하지 말고 <b>이실장 안심케어</b>와 함께해요.";
-        } else {
-            emoji = "🥚"; rank = "무방비 알맹이"; quote = '"지금 이대로 계약하면 위험해요!"';
-            desc = "껍데기 없는 알맹이처럼 보증금이 쏙 빠져나갈 위기!<br>지금 당장 <b>이실장 안심케어</b>로 보호막을 치세요.";
-        }
-        
+        let emoji = score === 3 ? "🐔" : (score === 2 ? "🐥" : "🐣");
+        let rank = score === 3 ? "안심 만렙 장닭" : (score === 2 ? "똘똘한 병아리" : "무방비 알맹이");
+
         document.getElementById('content').innerHTML = `
-            <div class="final-container">
-                <div class="score-visual">${score} / 3 정답</div>
-                <div class="rank-info">
-                    <div style="font-size: 8rem; margin-bottom: 10px;">${emoji}</div>
-                    <div class="rank-title">${rank}</div>
-                    <div class="rank-quote">${quote}</div>
-                    <div class="rank-desc">${desc}</div>
+            <div style="font-size:5rem;">${emoji}</div>
+            <div class="rank-title">${rank}</div>
+            <p class="rank-desc">총 3문제 중 ${score}문제를 맞히셨습니다!</p>
+            <div class="bottom-section">
+                <div class="qr-area">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://cc.aipartner.com/" class="qr-img">
+                    <div style="text-align:left; font-size:0.9rem;"><b>내 보증금 지키기</b><br>안심케어 확인하기</div>
                 </div>
-                <div class="bottom-section">
-                    <div class="qr-area">
-                        <img src="qr.png" class="qr-img" alt="QR" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://cc.aipartner.com/'">
-                        <div class="qr-text">
-                            <div class="qr-label-main">전세사기 걱정 끝!</div>
-                            <div class="qr-label-sub">QR 찍고 안심케어 알아보기</div>
-                        </div>
-                    </div>
-                    <button class="next-btn" onclick="renderStart()" style="background:#BDC1C6; color: white; margin-top: 0; padding: 25px 45px; font-size: 1.6rem;">처음으로</button>
-                </div>
+                <button class="next-btn" onclick="renderStart()" style="background:#eee; color:#666;">다시하기</button>
             </div>
         `;
     }
 
-    // 스크립트 실행 (HTML 로드 직후)
     renderStart();
 </script>
 </body>
